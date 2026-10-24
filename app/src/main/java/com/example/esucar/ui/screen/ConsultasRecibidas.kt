@@ -1,5 +1,6 @@
 package com.example.esucar.ui.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,7 +32,7 @@ fun PantallaConsultasRecibidas(navController: NavController) {
     val verde = Color(0xFF104D30)
     var filtroSeleccionado by remember { mutableStateOf("Pendientes") }
 
-    val consultas = remember { databaseHelper.obtenerConsultas() }
+    var consultas by remember { mutableStateOf(databaseHelper.obtenerConsultas()) }
 
     val consultasFiltradas = when (filtroSeleccionado) {
         "Pendientes" -> consultas.filter { it.estado == "Pendiente" }
@@ -121,7 +123,10 @@ fun PantallaConsultasRecibidas(navController: NavController) {
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Outlined.ChatBubbleOutline,
                                             contentDescription = null,
@@ -137,17 +142,40 @@ fun PantallaConsultasRecibidas(navController: NavController) {
                                         )
                                     }
 
-                                    Surface(
-                                        color = if (item.estado == "Respondida") Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
-                                        shape = RoundedCornerShape(12.dp)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        Text(
-                                            text = if (item.estado == "Respondida") "Respondida" else "Pendiente",
-                                            color = if (item.estado == "Respondida") verde else Color(0xFFC62828),
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
+                                        Surface(
+                                            color = if (item.estado == "Respondida") Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Text(
+                                                text = if (item.estado == "Respondida") "Respondida" else "Pendiente",
+                                                color = if (item.estado == "Respondida") verde else Color(0xFFC62828),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
+
+                                        IconButton(
+                                            onClick = {
+                                                val exito = databaseHelper.eliminarConsulta(item.id)
+                                                if (exito) {
+                                                    consultas = databaseHelper.obtenerConsultas()
+                                                    Toast.makeText(context, "Consulta eliminada de la base de datos", Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.Delete,
+                                                contentDescription = "Eliminar consulta",
+                                                tint = Color.Gray,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
                                     }
                                 }
 

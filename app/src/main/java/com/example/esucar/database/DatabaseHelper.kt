@@ -411,6 +411,13 @@ class DatabaseHelper(context: Context) :
         return resultado != -1L
     }
 
+    fun eliminarMaterial(id: Int): Boolean {
+        val db = writableDatabase
+        val filas = db.delete("materiales", "id = ?", arrayOf(id.toString()))
+        db.close()
+        return filas > 0
+    }
+
     // Métodos Consultas
     fun obtenerConsultas(): List<Consulta> {
         val lista = mutableListOf<Consulta>()
@@ -489,6 +496,14 @@ class DatabaseHelper(context: Context) :
             put("estado", "Respondida")
         }
         val filas = db.update("consultas", datos, "id = ?", arrayOf(id.toString()))
+        db.close()
+        return filas > 0
+    }
+
+    fun eliminarConsulta(id: Int): Boolean {
+        val db = writableDatabase
+        db.delete("mensajes_consulta", "consulta_id = ?", arrayOf(id.toString()))
+        val filas = db.delete("consultas", "id = ?", arrayOf(id.toString()))
         db.close()
         return filas > 0
     }

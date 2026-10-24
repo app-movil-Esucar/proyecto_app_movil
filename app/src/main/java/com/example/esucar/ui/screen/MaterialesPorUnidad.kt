@@ -146,14 +146,20 @@ fun PantallaMaterialesPorUnidad(
 
                                 IconButton(
                                     onClick = {
-                                        materialesBD.remove(item)
-                                        Toast.makeText(context, "Material eliminado de la lista", Toast.LENGTH_SHORT).show()
+                                        val exito = databaseHelper.eliminarMaterial(item.id)
+                                        if (exito) {
+                                            materialesBD.remove(item)
+                                            Toast.makeText(context, "Material eliminado de la base de datos", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            materialesBD.remove(item)
+                                            Toast.makeText(context, "Material eliminado", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Delete,
                                         contentDescription = "Eliminar",
-                                        tint = Color.Gray
+                                        tint = Color(0xFFC62828)
                                     )
                                 }
                             }

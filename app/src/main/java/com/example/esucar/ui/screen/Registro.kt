@@ -1,35 +1,33 @@
 package com.example.esucar.ui.screen
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.esucar.R
-import com.example.esucar.ui.components.EncabezadoEsucar
-import com.example.esucar.ui.components.SelectorPerfil
-import com.example.esucar.ui.components.PieInstitucional
-import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 import com.example.esucar.database.DatabaseHelper
-import com.example.esucar.validation.validarRegistro
+import com.example.esucar.ui.components.EncabezadoEsucar
+import com.example.esucar.ui.components.PieInstitucional
+import com.example.esucar.ui.components.SelectorPerfil
 import com.example.esucar.validation.ErroresRegistro
-import androidx.compose.runtime.rememberCoroutineScope
+import com.example.esucar.validation.validarRegistro
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.navigation.NavController
 
 @Composable
 fun PantallaRegistro(navController: NavController? = null) {
@@ -40,16 +38,10 @@ fun PantallaRegistro(navController: NavController? = null) {
     var confirmarContrasena by remember { mutableStateOf("") }
 
     val context = LocalContext.current
-    val databaseHelper = remember(context) {
-        DatabaseHelper(context.applicationContext)
-    }
+    val databaseHelper = remember(context) { DatabaseHelper(context.applicationContext) }
 
-    var errores by remember {
-        mutableStateOf(ErroresRegistro())
-    }
-    var intentoRegistro by remember {
-        mutableStateOf(false)
-    }
+    var errores by remember { mutableStateOf(ErroresRegistro()) }
+    var intentoRegistro by remember { mutableStateOf(false) }
 
     fun actualizarErrores() {
         if (intentoRegistro) {
@@ -63,47 +55,66 @@ fun PantallaRegistro(navController: NavController? = null) {
     }
 
     val scope = rememberCoroutineScope()
-    var guardando by remember {
-        mutableStateOf(false)
-    }
-    var mensajeExito by remember {
-        mutableStateOf("")
-    }
+    var guardando by remember { mutableStateOf(false) }
+    var mensajeExito by remember { mutableStateOf("") }
 
     val verde = Color(0xFF104D30)
     val fondo = Color(0xFFF1F3F0)
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
             .background(fondo)
             .safeDrawingPadding()
             .verticalScroll(rememberScrollState())
-        ) {
+    ) {
         // Encabezado
         EncabezadoEsucar()
 
-        //formulario
+        // Formulario
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Registrarse",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF172B20),
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+            // Encabezado con Botón Volver Atrás
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { navController?.popBackStack() }
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Volver Atrás",
+                        tint = verde
+                    )
+                }
+
+                Text(
+                    text = "Registrarse",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF172B20),
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
+
+                // Contrapeso visual para centrar el título
+                Spacer(modifier = Modifier.width(48.dp))
+            }
+
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Selector de perfil reutilizable
+            // Selector de perfil
             SelectorPerfil(
                 tipoUsuario = tipoUsuario,
                 onSeleccionar = { tipoUsuario = it }
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            //nombre completo
+            // Nombre completo
             Text("Nombre completo", fontSize = 12.sp, color = verde)
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -132,7 +143,7 @@ fun PantallaRegistro(navController: NavController? = null) {
             }
             Spacer(modifier = Modifier.height(10.dp))
 
-            //correo electronico
+            // Correo electrónico
             Text("Correo electrónico", fontSize = 12.sp, color = verde)
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -161,7 +172,7 @@ fun PantallaRegistro(navController: NavController? = null) {
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            //contraseña
+            // Contraseña
             Text("Contraseña", fontSize = 12.sp, color = verde)
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -191,7 +202,7 @@ fun PantallaRegistro(navController: NavController? = null) {
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            //confirmar contraseña
+            // Confirmar contraseña
             Text("Confirme su contraseña", fontSize = 12.sp, color = verde)
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -254,16 +265,11 @@ fun PantallaRegistro(navController: NavController? = null) {
                                     )
                                 }
                             } catch (e: Exception) {
-                                android.util.Log.e(
-                                    "ESUCAR_REGISTRO",
-                                    "Error al registrar usuario",
-                                    e
-                                )
+                                android.util.Log.e("ESUCAR_REGISTRO", "Error al registrar usuario", e)
                                 mensajeExito = "No se pudo completar el registro"
                             } finally {
                                 guardando = false
                             }
-
                         }
                     }
                 },
@@ -278,11 +284,12 @@ fun PantallaRegistro(navController: NavController? = null) {
                 )
             ) {
                 Text(
-                    text = "Crear cuenta",
+                    text = if (guardando) "Creando..." else "Crear cuenta",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
+
             if (mensajeExito.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
@@ -297,7 +304,7 @@ fun PantallaRegistro(navController: NavController? = null) {
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            //pie de pag
+            // Pie institucional
             PieInstitucional()
         }
     }
