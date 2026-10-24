@@ -6,7 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.esucar.database.DatabaseHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,26 +27,25 @@ fun PantallaNuevaConsulta(
     unidad: String,
     material: String
 ) {
-
     val verde = Color(0xFF104D30)
     val context = LocalContext.current
+    val databaseHelper = remember(context) { DatabaseHelper(context.applicationContext) }
+
     val nombreAsignatura = when (codigo) {
-        "DPE201" -> "Derecho Penal I"
-        "GAP202" -> "Gestión Administrativa"
-        "DOI203" -> "Doctrina Institucional"
-        else -> ""
+        "DPE201", "DER-101" -> "Derecho Penal I"
+        "GAP202", "PRO-201" -> "Procedimientos Policiales"
+        "DOI203", "DDHH-102" -> "Derechos Humanos"
+        else -> "Derecho Penal I"
     }
-    var asignatura by remember(codigo) {
-        mutableStateOf(nombreAsignatura)
-    }
+    var asignatura by remember(codigo) { mutableStateOf(nombreAsignatura) }
     var desplegado by remember { mutableStateOf(false) }
     var asunto by remember { mutableStateOf("") }
     var mensaje by remember { mutableStateOf("") }
 
     val asignaturas = listOf(
         "Derecho Penal I",
-        "Gestión Administrativa",
-        "Doctrina Institucional"
+        "Procedimientos Policiales",
+        "Derechos Humanos"
     )
 
     Scaffold(
@@ -61,22 +61,16 @@ fun PantallaNuevaConsulta(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = {
-                        navController.navigate("consultas_estudiante")
-                    }
-                ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
-                        imageVector = Icons.Outlined.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "Volver"
                     )
                 }
 
                 Text(
-                    text = "Nueva consulta",
+                    text = "Nueva Consulta",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -107,7 +101,6 @@ fun PantallaNuevaConsulta(
                 )
             }
 
-
             // Selección de asignatura
             ExposedDropdownMenuBox(
                 expanded = desplegado,
@@ -118,14 +111,10 @@ fun PantallaNuevaConsulta(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Asignatura") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(
-                            expanded = desplegado
-                        )
-                    },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = desplegado) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                 )
 
                 ExposedDropdownMenu(
@@ -148,9 +137,7 @@ fun PantallaNuevaConsulta(
                 value = asunto,
                 onValueChange = { asunto = it },
                 label = { Text("Asunto") },
-                placeholder = {
-                    Text("Ej.: Duda sobre la guía de ejercicios")
-                },
+                placeholder = { Text("Ej.: Duda sobre la guía de ejercicios") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -159,9 +146,7 @@ fun PantallaNuevaConsulta(
                 value = mensaje,
                 onValueChange = { mensaje = it },
                 label = { Text("Escribe tu consulta") },
-                placeholder = {
-                    Text("Describe tu duda para que el docente pueda ayudarte")
-                },
+                placeholder = { Text("Describe tu duda para que el docente pueda ayudarte") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp),
@@ -170,22 +155,24 @@ fun PantallaNuevaConsulta(
 
             Button(
                 onClick = {
-                    Toast.makeText(
-                        context,
-                        "Para una futura actualización",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    val exito = databaseHelper.insertarConsulta(
+                        estudianteNombre = "Carabinero Alumno",
+                        codigoAsignatura = if (codigo.isNotEmpty()) codigo else "DER-101",
+                        pregunta = "$asunto: $mensaje"
+                    )
+                    if (exito) {
+                        Toast.makeText(context, "Consulta enviada exitosamente", Toast.LENGTH_SHORT).show()
+                        navController.navigate("consultas_estudiante")
+                    } else {
+                        Toast.makeText(context, "Error al guardar la consulta", Toast.LENGTH_SHORT).show()
+                    }
                 },
-                enabled = asignatura.isNotBlank() &&
-                        asunto.isNotBlank() &&
-                        mensaje.isNotBlank(),
+                enabled = asignatura.isNotBlank() && asunto.isNotBlank() && mensaje.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = verde
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = verde)
             ) {
-                Text("Enviar consulta")
+                Text("Enviar Consulta")
             }
         }
     }

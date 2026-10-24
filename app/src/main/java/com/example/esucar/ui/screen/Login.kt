@@ -1,74 +1,119 @@
 package com.example.esucar.ui.screen
 
-import androidx.compose.foundation.Image
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.esucar.R
-import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import com.example.esucar.ui.components.EncabezadoEsucar
-import com.example.esucar.ui.components.SelectorPerfil
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.material3.MaterialTheme
-import com.example.esucar.ui.components.PieInstitucional
-import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 import com.example.esucar.database.DatabaseHelper
-import androidx.compose.runtime.rememberCoroutineScope
+import com.example.esucar.ui.components.EncabezadoEsucar
+import com.example.esucar.ui.components.PieInstitucional
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.navigation.NavController
+
 @Composable
 fun PantallaLogin(navController: NavController) {
-
-    var tipoUsuario by remember{ mutableStateOf("Estudiante") }
-    var usuarioInstitucional by remember{ mutableStateOf("") }
+    var usuarioInstitucional by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
 
+    var mostrarDialogoRecuperar by remember { mutableStateOf(false) }
+    var correoRecuperar by remember { mutableStateOf("") }
+
     val context = LocalContext.current
-    val databaseHelper = remember(context) {
-        DatabaseHelper(context.applicationContext)
-    }
+    val databaseHelper = remember(context) { DatabaseHelper(context.applicationContext) }
     val scope = rememberCoroutineScope()
-    var iniciandoSesion by remember {
-        mutableStateOf(false)
-    }
-    var mensajeError by remember {
-        mutableStateOf("")
-    }
 
+    var iniciandoSesion by remember { mutableStateOf(false) }
+    var mensajeError by remember { mutableStateOf("") }
 
-    val verde= Color(0Xff104d30)
-    val fondo= Color(0xFFF1F3F0)
+    val verde = Color(0xFF104D30)
+    val fondo = Color(0xFFF1F3F0)
+
+    // Cuadro de Diálogo Simulado de Recuperación de Contraseña
+    if (mostrarDialogoRecuperar) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoRecuperar = false },
+            title = {
+                Text(
+                    text = "Recuperar Contraseña",
+                    fontWeight = FontWeight.Bold,
+                    color = verde,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Ingresa tu correo institucional registrado para enviarte las instrucciones y el código de verificación simulado.",
+                        fontSize = 13.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = correoRecuperar,
+                        onValueChange = { correoRecuperar = it },
+                        label = { Text("Correo Institucional") },
+                        placeholder = { Text("ej. estudiante@esucar.cl") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (correoRecuperar.isNotBlank()) {
+                            mostrarDialogoRecuperar = false
+                            Toast.makeText(
+                                context,
+                                "Código enviado a ${correoRecuperar.trim()}. Usa el código simulado 123456",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            navController.navigate("codigo_verificacion")
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = verde)
+                ) {
+                    Text("Enviar Código")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { mostrarDialogoRecuperar = false }
+                ) {
+                    Text("Cancelar", color = Color.Gray)
+                }
+            }
+        )
+    }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
             .background(fondo)
             .safeDrawingPadding()
-    ){
-        //Encabezado
+    ) {
+        // Encabezado institucional
         EncabezadoEsucar()
 
-        //formulario
+        // Formulario
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -82,26 +127,50 @@ fun PantallaLogin(navController: NavController) {
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(12.dp))
 
-            //selecciona entre estudiante o docente
-            SelectorPerfil(
-                tipoUsuario = tipoUsuario,
-                onSeleccionar = { tipoUsuario = it }
-            )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Indicador de perfil automático por credenciales
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                color = verde.copy(alpha = 0.08f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Badge,
+                        contentDescription = null,
+                        tint = verde,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Acceso Único • Estudiante / Docente",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = verde
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(18.dp))
-            //para usuario institucional
+
+            // Campo Correo Institucional
             Text(
                 text = "Correo institucional",
-                color= Color(0xFF45564B),
+                color = Color(0xFF45564B),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(5.dp))
             OutlinedTextField(
                 value = usuarioInstitucional,
-                onValueChange = {usuarioInstitucional = it},
+                onValueChange = { usuarioInstitucional = it },
                 modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("ej. estudiante@esucar.cl o docente@esucar.cl") },
                 singleLine = true,
                 shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -111,10 +180,12 @@ fun PantallaLogin(navController: NavController) {
                     unfocusedBorderColor = Color(0xFFD5DDD5)
                 )
             )
+
             Spacer(modifier = Modifier.height(14.dp))
-            //para la contraseña
+
+            // Campo Contraseña
             Text(
-                text="Contraseña",
+                text = "Contraseña",
                 color = Color(0xFF45564B),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
@@ -122,7 +193,7 @@ fun PantallaLogin(navController: NavController) {
             Spacer(modifier = Modifier.height(5.dp))
             OutlinedTextField(
                 value = contrasena,
-                onValueChange = {contrasena = it},
+                onValueChange = { contrasena = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
@@ -134,12 +205,14 @@ fun PantallaLogin(navController: NavController) {
                     unfocusedBorderColor = Color(0xFFD5DDD5)
                 )
             )
+
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Recuperar contraseña
+            // Botón Recuperar contraseña simulado
             TextButton(
                 onClick = {
-                    // Pendiente implementar recuperación
+                    correoRecuperar = usuarioInstitucional
+                    mostrarDialogoRecuperar = true
                 },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
@@ -151,8 +224,8 @@ fun PantallaLogin(navController: NavController) {
                     textDecoration = TextDecoration.Underline
                 )
             }
-            Spacer(modifier = Modifier.height(16.dp))
 
+            Spacer(modifier = Modifier.height(12.dp))
 
             if (mensajeError.isNotEmpty()) {
                 Text(
@@ -187,23 +260,24 @@ fun PantallaLogin(navController: NavController) {
                                     mensajeError = ""
                                     when (usuario.perfil) {
                                         "Estudiante" -> {
-                                            navController.navigate("inicio_estudiante")
+                                            navController.navigate("inicio_estudiante") {
+                                                popUpTo("portada") { inclusive = false }
+                                            }
                                         }
                                         "Docente" -> {
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                "Pantalla docente en preparación",
-                                                android.widget.Toast.LENGTH_SHORT
-                                            ).show()
+                                            navController.navigate("inicio_docente") {
+                                                popUpTo("portada") { inclusive = false }
+                                            }
+                                        }
+                                        else -> {
+                                            navController.navigate("inicio_estudiante")
                                         }
                                     }
+                                } else {
+                                    mensajeError = "Correo o contraseña incorrectos"
                                 }
                             } catch (e: Exception) {
-                                android.util.Log.e(
-                                    "ESUCAR_LOGIN",
-                                    "Error al iniciar sesión",
-                                    e
-                                )
+                                android.util.Log.e("ESUCAR_LOGIN", "Error al iniciar sesión", e)
                                 mensajeError = "No se pudo iniciar sesión"
                             } finally {
                                 iniciandoSesion = false
@@ -222,17 +296,16 @@ fun PantallaLogin(navController: NavController) {
                 )
             ) {
                 Text(
-                    text = "Ingresar",
+                    text = if (iniciandoSesion) "Verificando..." else "Ingresar",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))
 
-            // Pie de la pag
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Pie institucional
             PieInstitucional()
-
-
         }
     }
 }

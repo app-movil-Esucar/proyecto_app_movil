@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.esucar.database.DatabaseHelper
 import com.example.esucar.model.MaterialEstudio
 
 @Composable
@@ -33,19 +34,38 @@ fun PantallaDetalleAsignatura(
     val verde = Color(0xFF104D30)
     val fondo = Color(0xFFF1F3F0)
     val context = LocalContext.current
+    val databaseHelper = remember(context) { DatabaseHelper(context.applicationContext) }
 
-    val nombreAsignatura = when (codigo) {
+    // Consultar asignatura y materiales directamente desde SQLite
+    val asignaturaBD = remember(codigo) { databaseHelper.obtenerAsignaturaPorCodigo(codigo) }
+    val materialesBD = remember(codigo) { databaseHelper.obtenerMaterialesPorAsignatura(codigo) }
+
+    val nombreAsignatura = asignaturaBD?.nombre ?: when (codigo) {
         "DPE201" -> "Derecho Penal I"
         "GAP202" -> "Gestión Administrativa"
         "DOI203" -> "Doctrina Institucional"
-        else -> "Asignatura no encontrada"
+        else -> "Asignatura ($codigo)"
     }
 
-    val progresoAsignatura = when (codigo) {
-        "DPE201" -> 62
-        "GAP202" -> 40
-        "DOI203" -> 60
-        else -> 0
+    val docenteAsignatura = asignaturaBD?.docente ?: "Prof. Juan Ramírez"
+    val progresoAsignatura = asignaturaBD?.progreso ?: 62
+
+    // Agrupar materiales por Unidad dinámicamente desde SQLite
+    val materialesPorUnidad = remember(materialesBD) {
+        if (materialesBD.isNotEmpty()) {
+            materialesBD.groupBy { it.unidad }
+        } else {
+            mapOf(
+                "Unidad 1" to listOf(
+                    MaterialEstudio("Introducción a la asignatura", "Revisado", codigoAsignatura = codigo, unidad = "Unidad 1"),
+                    MaterialEstudio("Conceptos fundamentales", "Revisado", codigoAsignatura = codigo, unidad = "Unidad 1")
+                ),
+                "Unidad 2" to listOf(
+                    MaterialEstudio("Marco legal y reglamentos", "Pendiente", codigoAsignatura = codigo, unidad = "Unidad 2"),
+                    MaterialEstudio("Casos de estudio prácticos", "Pendiente", codigoAsignatura = codigo, unidad = "Unidad 2")
+                )
+            )
+        }
     }
 
     Scaffold(
@@ -55,14 +75,13 @@ fun PantallaDetalleAsignatura(
                 onDescargar = {
                     Toast.makeText(
                         context,
-                        "Para una futura actualización",
+                        "Descargando unidad desde SQLite...",
                         Toast.LENGTH_SHORT
                     ).show()
                 },
                 onConsultar = {
                     navController.navigate("nueva_consulta?codigo=$codigo")
                 }
-
             )
         }
     ) { paddingValues ->
@@ -72,7 +91,6 @@ fun PantallaDetalleAsignatura(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-
             // Encabezado
             Row(
                 modifier = Modifier
@@ -104,7 +122,7 @@ fun PantallaDetalleAsignatura(
                     )
 
                     Text(
-                        text = "$codigo · Docente de ejemplo",
+                        text = "$codigo · $docenteAsignatura",
                         fontSize = 11.sp,
                         color = Color.Gray
                     )
@@ -137,171 +155,23 @@ fun PantallaDetalleAsignatura(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                when (codigo) {
+                var indexUnidad = 1
+                materialesPorUnidad.forEach { (nombreUnidad, listaMat) ->
+                    val leidos = listaMat.count { it.estado == "Leído" || it.estado == "Revisado" }
+                    val total = listaMat.size
 
-                    // DERECHO PENAL I
-                    "DPE201" -> {
-                        TarjetaUnidad(
-                            numero = 1,
-                            titulo = "Teoría del delito",
-                            avance = "5/5",
-                            contenido = listOf(
-                                MaterialEstudio("Introducción a la teoría del delito", "Revisado"),
-                                MaterialEstudio("Elementos del delito", "Revisado"),
-                                MaterialEstudio("Material de repaso", "Revisado")
-                            ),
-                            onMaterialClick = { nombreMaterial ->
-                                navController.navigate(
-                                    "detalle_material/${Uri.encode(nombreMaterial)}?codigo=$codigo&unidad=1"
-                                )
-                            }
-                        )
-
-                        TarjetaUnidad(
-                            numero = 2,
-                            titulo = "Delitos contra las personas",
-                            avance = "6/6",
-                            contenido = listOf(
-                                MaterialEstudio("Conceptos principales", "Revisado"),
-                                MaterialEstudio("Material de lectura", "Revisado"),
-                                MaterialEstudio("Ejercicios de repaso", "Revisado")
-                            ),
-                            onMaterialClick = { nombreMaterial ->
-                                navController.navigate(
-                                    "detalle_material/${Uri.encode(nombreMaterial)}?codigo=$codigo&unidad=2"
-                                )
-                            }
-                        )
-
-                        TarjetaUnidad(
-                            numero = 3,
-                            titulo = "Delitos contra la propiedad",
-                            avance = "4/7",
-                            contenido = listOf(
-                                MaterialEstudio("Código Penal, Libro II", "Revisado"),
-                                MaterialEstudio("Clase 3: Hurto y robo", "Revisado"),
-                                MaterialEstudio("Guía de ejercicios N°3", "En curso"),
-                                MaterialEstudio("Análisis de casos prácticos", "Pendiente")
-                            ),
-                            onMaterialClick = { nombreMaterial ->
-                                navController.navigate(
-                                    "detalle_material/${Uri.encode(nombreMaterial)}?codigo=$codigo&unidad=3"
-                                )
-                            }
-                        )
-
-                        TarjetaUnidad(
-                            numero = 4,
-                            titulo = "Delitos funcionarios",
-                            avance = "0/6",
-                            contenido = listOf(
-                                MaterialEstudio(
-                                    "Material pendiente de publicación",
-                                    "Pendiente"
-                                )
-                            ),
-                            onMaterialClick = { nombreMaterial ->
-                                navController.navigate(
-                                    "detalle_material/${Uri.encode(nombreMaterial)}?codigo=$codigo&unidad=4"
-                                )
-                            }
-                        )
-                    }
-
-                    // GESTIÓN ADMINISTRATIVA
-                    "GAP202" -> {
-                        TarjetaUnidad(
-                            numero = 1,
-                            titulo = "Introducción a la gestión administrativa",
-                            avance = "1/2",
-                            contenido = listOf(
-                                MaterialEstudio(
-                                    "Conceptos básicos de administración",
-                                    "Revisado"
-                                ),
-                                MaterialEstudio(
-                                    "Organización administrativa",
-                                    "Pendiente"
-                                )
-                            ),
-                            onMaterialClick = { nombreMaterial ->
-                                navController.navigate(
-                                    "detalle_material/${Uri.encode(nombreMaterial)}?codigo=$codigo&unidad=2"
-                                )
-                            }
-                        )
-
-                        TarjetaUnidad(
-                            numero = 2,
-                            titulo = "Procesos administrativos",
-                            avance = "0/2",
-                            contenido = listOf(
-                                MaterialEstudio(
-                                    "Planificación y organización",
-                                    "Pendiente"
-                                ),
-                                MaterialEstudio(
-                                    "Control de procesos",
-                                    "Pendiente"
-                                )
-                            ),
-                            onMaterialClick = { nombreMaterial ->
-                                navController.navigate(
-                                    "detalle_material/${Uri.encode(nombreMaterial)}?codigo=$codigo&unidad=2"
-                                )
-                            }
-                        )
-                    }
-
-                    // DOCTRINA INSTITUCIONAL
-                    "DOI203" -> {
-                        TarjetaUnidad(
-                            numero = 1,
-                            titulo = "Fundamentos institucionales",
-                            avance = "1/2",
-                            contenido = listOf(
-                                MaterialEstudio(
-                                    "Historia institucional",
-                                    "Revisado"
-                                ),
-                                MaterialEstudio(
-                                    "Principios institucionales",
-                                    "Pendiente"
-                                )
-                            ),
-                            onMaterialClick = { nombreMaterial ->
-                                navController.navigate(
-                                    "detalle_material/${Uri.encode(nombreMaterial)}?codigo=$codigo&unidad=1"
-                                )
-                            }
-                        )
-                        TarjetaUnidad(
-                            numero = 2,
-                            titulo = "Valores y deberes",
-                            avance = "0/2",
-                            contenido = listOf(
-                                MaterialEstudio(
-                                    "Valores institucionales",
-                                    "Pendiente"
-                                ),
-                                MaterialEstudio(
-                                    "Deberes profesionales",
-                                    "Pendiente"
-                                )
-                            ),
-                            onMaterialClick = { nombreMaterial ->
-                                navController.navigate(
-                                    "detalle_material/${Uri.encode(nombreMaterial)}?codigo=$codigo&unidad=2"
-                                )
-                            }
-                        )
-                    }
-
-                    else -> {
-                        Text(
-                            text = "No hay unidades disponibles para esta asignatura."
-                        )
-                    }
+                    TarjetaUnidad(
+                        numero = indexUnidad,
+                        titulo = nombreUnidad,
+                        avance = "$leidos/$total",
+                        contenido = listaMat,
+                        onMaterialClick = { nombreMaterial ->
+                            navController.navigate(
+                                "detalle_material/${Uri.encode(nombreMaterial)}?codigo=$codigo&unidad=$indexUnidad"
+                            )
+                        }
+                    )
+                    indexUnidad++
                 }
             }
         }
@@ -317,7 +187,7 @@ private fun TarjetaUnidad(
     contenido: List<MaterialEstudio>,
     onMaterialClick: (String) -> Unit
 ) {
-    var expandida by remember { mutableStateOf(false) }
+    var expandida by remember { mutableStateOf(true) }
     val verde = Color(0xFF104D30)
 
     Card(
@@ -325,17 +195,13 @@ private fun TarjetaUnidad(
             .fillMaxWidth()
             .padding(bottom = 10.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        expandida = !expandida
-                    }
+                    .clickable { expandida = !expandida }
                     .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -346,9 +212,7 @@ private fun TarjetaUnidad(
                     modifier = Modifier.padding(end = 12.dp)
                 )
 
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Unidad $numero",
                         fontSize = 11.sp,
@@ -371,16 +235,8 @@ private fun TarjetaUnidad(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Icon(
-                    imageVector = if (expandida) {
-                        Icons.Outlined.ExpandLess
-                    } else {
-                        Icons.Outlined.ExpandMore
-                    },
-                    contentDescription = if (expandida) {
-                        "Contraer unidad"
-                    } else {
-                        "Expandir unidad"
-                    },
+                    imageVector = if (expandida) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = if (expandida) "Contraer unidad" else "Expandir unidad",
                     tint = verde
                 )
             }
@@ -392,9 +248,7 @@ private fun TarjetaUnidad(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                onMaterialClick(material.nombre)
-                            }
+                            .clickable { onMaterialClick(material.nombre) }
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -411,7 +265,7 @@ private fun TarjetaUnidad(
                             text = material.estado,
                             fontSize = 11.sp,
                             color = when (material.estado) {
-                                "Revisado" -> Color(0xFF104D30)
+                                "Revisado", "Leído" -> Color(0xFF104D30)
                                 "En curso" -> Color(0xFFE85D18)
                                 else -> Color.Gray
                             }
@@ -463,9 +317,7 @@ private fun BotonesDetalleAsignatura(
             onClick = onConsultar,
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = verde
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = verde)
         ) {
             Text(
                 text = "Consultar",
@@ -474,4 +326,3 @@ private fun BotonesDetalleAsignatura(
         }
     }
 }
-

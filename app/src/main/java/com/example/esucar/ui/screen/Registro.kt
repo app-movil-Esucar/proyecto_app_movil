@@ -29,9 +29,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.navigation.NavController
 
 @Composable
-fun PantallaRegistro() {
+fun PantallaRegistro(navController: NavController? = null) {
     var tipoUsuario by remember { mutableStateOf("Estudiante") }
     var nombre by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
@@ -245,6 +246,7 @@ fun PantallaRegistro() {
                                 }
                                 if (registrado) {
                                     mensajeExito = "Cuenta creada correctamente"
+                                    navController?.navigate("codigo_verificacion")
                                 } else {
                                     mensajeExito = ""
                                     errores = errores.copy(
