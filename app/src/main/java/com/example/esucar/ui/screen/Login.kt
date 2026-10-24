@@ -20,19 +20,42 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.esucar.ui.components.EncabezadoEsucar
+import com.example.esucar.ui.components.SelectorPerfil
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.MaterialTheme
+import com.example.esucar.ui.components.PieInstitucional
+import androidx.compose.ui.platform.LocalContext
+import com.example.esucar.database.DatabaseHelper
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.navigation.NavController
 @Composable
-fun PantallaLogin() {
+fun PantallaLogin(navController: NavController) {
 
-    var tipoUsuario by remember{
-        mutableStateOf("Estudiante")
+    var tipoUsuario by remember{ mutableStateOf("Estudiante") }
+    var usuarioInstitucional by remember{ mutableStateOf("") }
+    var contrasena by remember { mutableStateOf("") }
+
+    val context = LocalContext.current
+    val databaseHelper = remember(context) {
+        DatabaseHelper(context.applicationContext)
     }
-    var usuarioInstitucional by remember{
+    val scope = rememberCoroutineScope()
+    var iniciandoSesion by remember {
+        mutableStateOf(false)
+    }
+    var mensajeError by remember {
         mutableStateOf("")
     }
-    var contrasena by remember {
-        mutableStateOf("")
-    }
+
 
     val verde= Color(0Xff104d30)
     val fondo= Color(0xFFF1F3F0)
@@ -40,56 +63,19 @@ fun PantallaLogin() {
     Column(
         modifier = Modifier.fillMaxSize()
             .background(fondo)
-    )   {
-        //seccion superior
-        Column(
-            modifier = Modifier.fillMaxWidth()
-                .weight(0.40f)
-                .background(verde),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Image(
-                painter=painterResource(R.drawable.logo2),
-                contentDescription = "Escudo ESUCAR",
-                modifier = Modifier.size(105.dp)
-            )
-            Spacer(modifier = Modifier.height(15.dp))
-            Text(
-                text = "Escuela de Suboficiales",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Repositorio de Estudio • ESUCAR",
-                color = Color(0xFFE5B000),
-                fontSize = 10.sp
-            )
-        }
-        //para linea amarilla y naranja
-        Row(
-            modifier = Modifier.fillMaxWidth()
-                .height(6.dp)
-        ) {//mitad amarilla
-            Box(
-                modifier = Modifier.weight(1f)
-                    .fillMaxHeight()
-                    .background(Color(0xFFE5B000))
-            )//mitad naranja
-            Box(
-                modifier = Modifier.weight(1f)
-                    .fillMaxHeight()
-                    .background(Color(0xFFE85D18))
-            )
+            .safeDrawingPadding()
+    ){
+        //Encabezado
+        EncabezadoEsucar()
 
-        }
-        //seccion inferior
+        //formulario
         Column(
-            modifier = Modifier.fillMaxWidth()
-                .weight(0.6f)
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
-        ){
+        ) {
             Text(
                 text = "Iniciar sesión",
                 color = Color(0xFF172B20),
@@ -97,50 +83,16 @@ fun PantallaLogin() {
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .background(
-                        Color(0xFFE4EAE4),
-                        RoundedCornerShape(10.dp)
-                    )
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                listOf("Estudiante", "Docente").forEach { usuario ->
-                    Button(
-                        onClick = {
-                            tipoUsuario = usuario
-                        },
-                        modifier = Modifier.weight(1f)
-                            .height(40.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor =
-                                if (tipoUsuario == usuario)
-                                    Color.White
-                                else
-                                    Color(0xFFE4EAE4),
-                            contentColor =
-                                if(tipoUsuario == usuario)
-                                    verde
-                                else
-                                    Color.DarkGray
-                        ),
-                        contentPadding = PaddingValues(0.dp),
-                        elevation = null
-                    ){
-                        Text(
-                            text = usuario,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
+
+            //selecciona entre estudiante o docente
+            SelectorPerfil(
+                tipoUsuario = tipoUsuario,
+                onSeleccionar = { tipoUsuario = it }
+            )
             Spacer(modifier = Modifier.height(18.dp))
             //para usuario institucional
             Text(
-                text = "Usuario institucional",
+                text = "Correo institucional",
                 color= Color(0xFF45564B),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
@@ -182,6 +134,105 @@ fun PantallaLogin() {
                     unfocusedBorderColor = Color(0xFFD5DDD5)
                 )
             )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Recuperar contraseña
+            TextButton(
+                onClick = {
+                    // Pendiente implementar recuperación
+                },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text(
+                    text = "¿Olvidaste tu contraseña?",
+                    fontSize = 13.sp,
+                    color = verde,
+                    fontWeight = FontWeight.Bold,
+                    textDecoration = TextDecoration.Underline
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+            if (mensajeError.isNotEmpty()) {
+                Text(
+                    text = mensajeError,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Botón Ingresar
+            Button(
+                onClick = {
+                    mensajeError = ""
+                    if (usuarioInstitucional.isBlank() || contrasena.isBlank()) {
+                        mensajeError = "Debes ingresar tu correo y contraseña"
+                    } else if (!iniciandoSesion) {
+                        iniciandoSesion = true
+                        val correoIngresado = usuarioInstitucional.trim()
+                        val contrasenaIngresada = contrasena
+                        scope.launch {
+                            try {
+                                val usuario = withContext(Dispatchers.IO) {
+                                    databaseHelper.iniciarSesion(
+                                        correo = correoIngresado,
+                                        contrasena = contrasenaIngresada
+                                    )
+                                }
+                                if (usuario != null) {
+                                    mensajeError = ""
+                                    when (usuario.perfil) {
+                                        "Estudiante" -> {
+                                            navController.navigate("inicio_estudiante")
+                                        }
+                                        "Docente" -> {
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "Pantalla docente en preparación",
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e(
+                                    "ESUCAR_LOGIN",
+                                    "Error al iniciar sesión",
+                                    e
+                                )
+                                mensajeError = "No se pudo iniciar sesión"
+                            } finally {
+                                iniciandoSesion = false
+                            }
+                        }
+                    }
+                },
+                enabled = !iniciandoSesion,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = verde,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Ingresar",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Pie de la pag
+            PieInstitucional()
+
+
         }
     }
 }
